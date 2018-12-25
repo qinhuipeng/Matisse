@@ -36,6 +36,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.zhihu.matisse.R;
 import com.zhihu.matisse.internal.entity.Album;
@@ -51,6 +52,7 @@ import com.zhihu.matisse.internal.ui.adapter.AlbumMediaAdapter;
 import com.zhihu.matisse.internal.ui.adapter.AlbumsAdapter;
 import com.zhihu.matisse.internal.ui.widget.AlbumsSpinner;
 import com.zhihu.matisse.internal.ui.widget.CheckRadioView;
+import com.zhihu.matisse.internal.ui.widget.CheckView;
 import com.zhihu.matisse.internal.ui.widget.IncapableDialog;
 import com.zhihu.matisse.internal.utils.MediaStoreCompat;
 import com.zhihu.matisse.internal.utils.PathUtils;
@@ -88,6 +90,8 @@ public class MatisseActivity extends AppCompatActivity implements
 
     private LinearLayout mOriginalLayout;
     private CheckRadioView mOriginal;
+    private CheckView mCheckView;
+    private Item mItem;
     private boolean mOriginalEnable;
 
     @Override
@@ -134,7 +138,6 @@ public class MatisseActivity extends AppCompatActivity implements
         mOriginalLayout = findViewById(R.id.originalLayout);
         mOriginal = findViewById(R.id.original);
         mOriginalLayout.setOnClickListener(this);
-
         mSelectedCollection.onCreate(savedInstanceState);
         if (savedInstanceState != null) {
             mOriginalEnable = savedInstanceState.getBoolean(CHECK_STATE);
@@ -271,15 +274,47 @@ public class MatisseActivity extends AppCompatActivity implements
         mOriginal.setChecked(mOriginalEnable);
         if (countOverMaxSize() > 0) {
 
-            if (mOriginalEnable) {
-                IncapableDialog incapableDialog = IncapableDialog.newInstance("",
-                        getString(R.string.error_over_original_size, mSpec.originalMaxSize));
-                incapableDialog.show(getSupportFragmentManager(),
-                        IncapableDialog.class.getName());
+//            if (mOriginalEnable) {
+//            IncapableDialog incapableDialog = IncapableDialog.newInstance("",
+//                    getString(R.string.error_over_original_size, mSpec.originalMaxSize));
+//            incapableDialog.show(getSupportFragmentManager(),
+//                    IncapableDialog.class.getName());
+            Toast.makeText(this, getString(R.string.error_over_original_size, mSpec.originalMaxSize), Toast.LENGTH_SHORT).show();
 
-                mOriginal.setChecked(false);
-                mOriginalEnable = false;
+            mOriginal.setChecked(false);
+            mOriginalEnable = false;
+            if (mSpec.countable) {
+                mCheckView.setCheckedNum(CheckView.UNCHECKED);
+
+            } else {
+                mCheckView.setChecked(false);
             }
+            mSelectedCollection.remove(mItem);
+            //updateSize(mItem);
+            int selectedCount = mSelectedCollection.count();
+            if (selectedCount == 0) {
+                mButtonApply.setText(R.string.button_sure_default);
+                mButtonApply.setEnabled(false);
+                mButtonPreview.setEnabled(false);
+                mButtonApply.setEnabled(false);
+                mButtonApply.setText(getString(R.string.button_sure_default));
+
+            } else if (selectedCount == 1 && mSpec.singleSelectionModeEnabled()) {
+                mButtonApply.setText(R.string.button_sure_default);
+                mButtonApply.setEnabled(true);
+                mButtonPreview.setEnabled(true);
+
+            } else {
+                mButtonPreview.setEnabled(true);
+                mButtonApply.setEnabled(true);
+                mButtonApply.setText(getString(R.string.button_sure, selectedCount));
+            }
+            if (mSpec.originalable) {
+                mOriginalLayout.setVisibility(View.VISIBLE);
+            } else {
+                mOriginalLayout.setVisibility(View.GONE);
+            }
+//            }
         }
     }
 
@@ -290,7 +325,7 @@ public class MatisseActivity extends AppCompatActivity implements
         for (int i = 0; i < selectedCount; i++) {
             Item item = mSelectedCollection.asList().get(i);
 
-            if (item.isImage()) {
+            if (item.isImage() || item.isVideo()) {
                 float size = PhotoMetadataUtils.getSizeInMB(item.size);
                 if (size > mSpec.originalMaxSize) {
                     count++;
@@ -393,8 +428,10 @@ public class MatisseActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onUpdate() {
+    public void onUpdate(CheckView checkView,Item item) {
         // notify bottom toolbar that check state changed.
+        mCheckView = checkView;
+        mItem = item;
         updateBottomToolbar();
 
         if (mSpec.onSelectedListener != null) {

@@ -33,6 +33,7 @@ import com.zhihu.matisse.internal.entity.SelectionSpec;
 import com.zhihu.matisse.internal.model.AlbumMediaCollection;
 import com.zhihu.matisse.internal.model.SelectedItemCollection;
 import com.zhihu.matisse.internal.ui.adapter.AlbumMediaAdapter;
+import com.zhihu.matisse.internal.ui.widget.CheckView;
 import com.zhihu.matisse.internal.ui.widget.MediaGridInset;
 import com.zhihu.matisse.internal.utils.UIUtils;
 
@@ -138,10 +139,10 @@ public class MediaSelectionFragment extends Fragment implements
     }
 
     @Override
-    public void onUpdate() {
+    public void onUpdate(CheckView checkView,Item item) {
         // notify outer Activity that check state changed
         if (mCheckStateListener != null) {
-            mCheckStateListener.onUpdate();
+            mCheckStateListener.onUpdate(checkView,item);
         }
     }
 

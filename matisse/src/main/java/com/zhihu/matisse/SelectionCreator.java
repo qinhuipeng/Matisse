@@ -18,6 +18,7 @@ package com.zhihu.matisse;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.os.Build;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
@@ -37,6 +38,7 @@ import com.zhihu.matisse.ui.MatisseActivity;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Set;
 
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_BEHIND;
@@ -343,6 +345,36 @@ public final class SelectionCreator {
         return this;
     }
 
+    /**
+     * 设置语言
+     * @param lang
+     */
+    public SelectionCreator setLang(String lang) {
+        android.content.res.Resources resources = mMatisse.getActivity().getResources();
+        Configuration configuration = resources.getConfiguration();
+
+        //如果出现不支持的语言就使用第一个语言
+        Locale locale;
+        if ("".equals(lang)) {
+            //如果是空，就使用系统语言
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                locale = resources.getConfiguration().getLocales().getDefault().get(0);
+            } else {
+                locale = Locale.getDefault();
+            }
+        } else {
+            locale = new Locale(lang, "");
+        }
+        //如果出现不支持的语言就使用第一个语言
+        //记录好使用的语言
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            configuration.setLocale(locale);
+        } else {
+            configuration.locale = locale;
+        }
+        resources.updateConfiguration(configuration, resources.getDisplayMetrics());
+        return this;
+    }
     /**
      * Start to select media and wait for result.
      *

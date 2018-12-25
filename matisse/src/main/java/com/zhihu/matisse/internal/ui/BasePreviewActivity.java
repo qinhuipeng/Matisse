@@ -16,6 +16,7 @@
 package com.zhihu.matisse.internal.ui;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -28,6 +29,7 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.zhihu.matisse.R;
 import com.zhihu.matisse.internal.entity.IncapableCause;
@@ -71,6 +73,7 @@ public abstract class BasePreviewActivity extends AppCompatActivity implements V
     private FrameLayout mBottomToolbar;
     private FrameLayout mTopToolbar;
     private boolean mIsToolbarHide = false;
+    private Item mItem;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -117,19 +120,20 @@ public abstract class BasePreviewActivity extends AppCompatActivity implements V
 
             @Override
             public void onClick(View v) {
-                Item item = mAdapter.getMediaItem(mPager.getCurrentItem());
-                if (mSelectedCollection.isSelected(item)) {
-                    mSelectedCollection.remove(item);
+                mItem = mAdapter.getMediaItem(mPager.getCurrentItem());
+
+                if (mSelectedCollection.isSelected(mItem)) {
+                    mSelectedCollection.remove(mItem);
                     if (mSpec.countable) {
                         mCheckView.setCheckedNum(CheckView.UNCHECKED);
                     } else {
                         mCheckView.setChecked(false);
                     }
                 } else {
-                    if (assertAddSelection(item)) {
-                        mSelectedCollection.add(item);
+                    if (assertAddSelection(mItem)) {
+                        mSelectedCollection.add(mItem);
                         if (mSpec.countable) {
-                            mCheckView.setCheckedNum(mSelectedCollection.checkedNumOf(item));
+                            mCheckView.setCheckedNum(mSelectedCollection.checkedNumOf(mItem));
                         } else {
                             mCheckView.setChecked(true);
                         }
@@ -144,7 +148,6 @@ public abstract class BasePreviewActivity extends AppCompatActivity implements V
             }
         });
 
-
         mOriginalLayout = findViewById(R.id.originalLayout);
         mOriginal = findViewById(R.id.original);
         mOriginalLayout.setOnClickListener(new View.OnClickListener() {
@@ -153,8 +156,9 @@ public abstract class BasePreviewActivity extends AppCompatActivity implements V
 
                 int count = countOverMaxSize();
                 if (count > 0) {
+                    //Toast.makeText(context, getString(R.string.error_over_original_count, mSpec.originalMaxSize), Toast.LENGTH_SHORT).show();
                     IncapableDialog incapableDialog = IncapableDialog.newInstance("",
-                            getString(R.string.error_over_original_count, count, mSpec.originalMaxSize));
+                            getString(R.string.error_over_original_count,count, mSpec.originalMaxSize));
                     incapableDialog.show(getSupportFragmentManager(),
                             IncapableDialog.class.getName());
                     return;
@@ -240,9 +244,9 @@ public abstract class BasePreviewActivity extends AppCompatActivity implements V
         if (mPreviousPos != -1 && mPreviousPos != position) {
             ((PreviewItemFragment) adapter.instantiateItem(mPager, mPreviousPos)).resetView();
 
-            Item item = adapter.getMediaItem(position);
+            mItem = adapter.getMediaItem(position);
             if (mSpec.countable) {
-                int checkedNum = mSelectedCollection.checkedNumOf(item);
+                int checkedNum = mSelectedCollection.checkedNumOf(mItem);
                 mCheckView.setCheckedNum(checkedNum);
                 if (checkedNum > 0) {
                     mCheckView.setEnabled(true);
@@ -250,7 +254,7 @@ public abstract class BasePreviewActivity extends AppCompatActivity implements V
                     mCheckView.setEnabled(!mSelectedCollection.maxSelectableReached());
                 }
             } else {
-                boolean checked = mSelectedCollection.isSelected(item);
+                boolean checked = mSelectedCollection.isSelected(mItem);
                 mCheckView.setChecked(checked);
                 if (checked) {
                     mCheckView.setEnabled(true);
@@ -258,7 +262,7 @@ public abstract class BasePreviewActivity extends AppCompatActivity implements V
                     mCheckView.setEnabled(!mSelectedCollection.maxSelectableReached());
                 }
             }
-            updateSize(item);
+            updateSize(mItem);
         }
         mPreviousPos = position;
     }
@@ -298,16 +302,41 @@ public abstract class BasePreviewActivity extends AppCompatActivity implements V
 
         if (countOverMaxSize() > 0) {
 
-            if (mOriginalEnable) {
-                IncapableDialog incapableDialog = IncapableDialog.newInstance("",
-                        getString(R.string.error_over_original_size, mSpec.originalMaxSize));
-                incapableDialog.show(getSupportFragmentManager(),
-                        IncapableDialog.class.getName());
+//            if (mOriginalEnable) {
+//            IncapableDialog incapableDialog = IncapableDialog.newInstance("",
+//                    getString(R.string.error_over_original_size, mSpec.originalMaxSize));
+//            incapableDialog.show(getSupportFragmentManager(),
+//                    IncapableDialog.class.getName());
+            Toast.makeText(this, getString(R.string.error_over_original_size, mSpec.originalMaxSize), Toast.LENGTH_SHORT).show();
 
-                mOriginal.setChecked(false);
-                mOriginal.setColor(Color.WHITE);
-                mOriginalEnable = false;
+            mOriginal.setChecked(false);
+            mOriginal.setColor(Color.WHITE);
+            mOriginalEnable = false;
+            if (mSpec.countable) {
+                mCheckView.setCheckedNum(CheckView.UNCHECKED);
+
+            } else {
+                mCheckView.setChecked(false);
             }
+            mSelectedCollection.remove(mItem);
+            updateSize(mItem);
+            int selectedCount = mSelectedCollection.count();
+            if (selectedCount == 0) {
+                mButtonApply.setText(R.string.button_sure_default);
+                mButtonApply.setEnabled(false);
+            } else if (selectedCount == 1 && mSpec.singleSelectionModeEnabled()) {
+                mButtonApply.setText(R.string.button_sure_default);
+                mButtonApply.setEnabled(true);
+            } else {
+                mButtonApply.setEnabled(true);
+                mButtonApply.setText(getString(R.string.button_sure, selectedCount));
+            }
+            if (mSpec.originalable) {
+                mOriginalLayout.setVisibility(View.VISIBLE);
+            } else {
+                mOriginalLayout.setVisibility(View.GONE);
+            }
+//            }
         }
     }
 
@@ -317,7 +346,7 @@ public abstract class BasePreviewActivity extends AppCompatActivity implements V
         int selectedCount = mSelectedCollection.count();
         for (int i = 0; i < selectedCount; i++) {
             Item item = mSelectedCollection.asList().get(i);
-            if (item.isImage()) {
+            if (item.isImage() || item.isVideo()) {
                 float size = PhotoMetadataUtils.getSizeInMB(item.size);
                 if (size > mSpec.originalMaxSize) {
                     count++;

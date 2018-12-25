@@ -82,6 +82,7 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
                                             .choose(MimeType.ofAll(), false)
                                             .countable(true)
                                             .capture(true)
+                                            //拍照临时存放
                                             .captureStrategy(
                                                     new CaptureStrategy(true, "com.zhihu.matisse.sample.fileprovider","test"))
                                             .maxSelectable(9)
@@ -102,7 +103,7 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
                                                 }
                                             })
                                             .originalEnable(true)
-                                            .maxOriginalSize(10)
+                                            .maxOriginalSize(50)
                                             .autoHideToolbarOnSingleTap(true)
                                             .setOnCheckedListener(new OnCheckedListener() {
                                                 @Override
@@ -110,7 +111,7 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
                                                     // DO SOMETHING IMMEDIATELY HERE
                                                     Log.e("isChecked", "onCheck: isChecked=" + isChecked);
                                                 }
-                                            })
+                                            }).setLang("en") //en 英文 zh 中文
                                             .forResult(REQUEST_CODE_CHOOSE);
                                     break;
                                 case R.id.dracula:
